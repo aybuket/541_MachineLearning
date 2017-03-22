@@ -1,7 +1,5 @@
-using Knet, PyCall
-
-
-
+using PyCall
+# Pycall to use GloVe
 
 # Train 3000000 iteration
 # Momentum = 0.95
@@ -27,15 +25,20 @@ global lr = 0.005;
 # Attention calculation (subj as ex., rel and obj is same)
 # a(t,subj) = exp(B(T,subj).ht) / ∑(µ=1,T) exp(B(T,subj).hµ)
 function lstm()
+  for h=1:1000
+  end
 end
 
-function attention()
+function attention(b,ht)
+  expValue = exp(b' * ht)
+  a = expValue/sum(expValue)
+  return a
 end
 
 function languageRep(a,e)
   q=0
   for k = 1:length(e)
-    q += attention(k)*e[k]
+    q += attention()*e[k]
   end
   return q
 end
@@ -104,17 +107,23 @@ end
 # End-to-end Learning #
 #######################
 
-# LossWeak = -log(exp(spair(bsubj-gt,bobj-gt))) / ∑ exp(spair(bi,bj)))
+# LossStrong= -log(exp(spair(bsubj-gt,bobj-gt))) / ∑ exp(spair(bi,bj)))
 function strongLoss()
-  subj = locationModule(bs,qls,lws)
-  rel = relationModule(bs,bo,qrel,rw)
-  obj = locationModule(bo,qlo,lwo)
+  subj = locationModule(bsubj,qlocsubj,lwsubj)
+  rel = relationModule(bsubj,bobj,qrel,rw)
+  obj = locationModule(bobj,qlocobj,lwobj)
   spair = subj+rel+obj
-  
+  pairexp = exp(spair)
+  loss = -log(pairexp/sum(pairexp))
+  return loss
 end
 
 # LossWeak = -log(exp(ssubj(bsubj-gt))) / ∑ exp(Ssubj(bi)))
 function weakloss()
+  subj = locationModule(b,qloc,lw)
+  expsubj = exp(subj)
+  loss = -log(expsubj/sum(expsubj))
+  return loss
 end
 
 function train()
