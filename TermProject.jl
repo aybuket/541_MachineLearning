@@ -13,14 +13,20 @@ global momentum = 0.95;
 global lr = 0.005;
 
 # Shape extract
-
+function shapeScore()
+end
 
 # Visual Genome extract
+function visgenScore()
+end
 
 # Visual 7W extract
+function vis7wScore()
+end
 
 # GoogleRef extract
-
+function googlerefScore()
+end
 
 
 #####################################
@@ -46,14 +52,12 @@ end
 # and backward hidden state ht(1,bw) at each time step. Becomes ht(1)
 # Second layer of LSTM = input: {ht(1)}, output: ht(2,fw) & ht(2,bw)
 # Then ht = [ht(1,fw), ht(1,bw), ht(2,fw), ht(2,bw)]
+
 function lstmLayer1(e)
-  for h=1:1000
-  end
   return (ht1fw,ht1bw)
 end
 
 function lstmLayer2(ht)
-
   return (ht2fw, ht2bw)
 end
 function lstm(e)
@@ -95,6 +99,25 @@ end
 # where [xmin, ymin, xmax, ymax] and Sb are bounding box coordinates and area of b
 # and WI width, HI height and SI are of the image I.
 
+# Spatial Features
+
+function spatial(boundingBox, height, weight)
+  box = KnetArray(boundingBox)
+  spatialFeatures = zeros(?,5)
+  x1 = box[:, 0] * 2.0 / weight - 1
+  y1 = box[:, 1] * 2.0 / height - 1
+  x2 = box[:, 2] * 2.0 / weight - 1
+  y2 = box[:, 3] * 2.0 / height - 1
+  S = (x2-x1) * (y2-y1)
+
+  spatialFeatures[:, 0] = x1
+  spatialFeatures[:, 1] = y1
+  spatialFeatures[:, 2] = x2
+  spatialFeatures[:, 3] = y2
+  spatialFeatures[:, 4] = S
+  return spatialFeatures
+end
+
 # The parameters in QLoc = (Wv,s, bv,s, wloc, bloc)
 function locationModule(b,qloc,lw)
   xs = 0 # spatial of b
@@ -121,10 +144,10 @@ function relationModule(b1,b2,qrel,rw)
   # Xspatial = [Xmin/WI, Ymin/HI, Xmax/WI, Ymax/HI, Sb/SI],
   # where [xmin, ymin, xmax, ymax] and Sb are bounding box coordinates and area of b
   # and WI width, HI height and SI are of the image I.
-  x1 = 0 # spatial features of b1
-  x2 = 0 # spatial features of b2
+  x1 = spatial(b1,) # spatial features of b1
+  x2 = spatial(b2,) # spatial features of b2
   # x1,2 = [x1,x2]
-  x = [x1, x2]
+  x = hcat(x1,x2)
   # ~x1,2 = W1,2*x1,2 + b1,2
   xhat = rw[1]*x + rw[2]
   # zrel = ~x1,2 .* Qrel
@@ -159,10 +182,20 @@ function weakloss()
   return loss
 end
 
-function train()
-  for (x,y) in data
-  end
+# Shape dataset
+function shapeTrain()
+end
 
+# Visual Genom  dataset
+function visgenTrain()
+end
+
+# Visual 7W dataset
+function vis7wTrain()
+end
+
+# GoogleRef dataset
+function googlerefTrain()
 end
 
 function precision()
