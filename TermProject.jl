@@ -1,6 +1,42 @@
-using PyCall
+for p in ("Knet","ArgParse","Pycall","GZip")
+    Pkg.installed(p) == nothing && Pkg.add(p)
+end
 @pyimport GloVe
-using Knet
+#=
+function loaddata()
+  info("Loading Visual Genome...")
+	xtrn = gzload("")[0:end]
+	xtst = gzload("")[0:end]
+	ytrn = gzload("")[0:end]
+	ytst = gzload("")[0:end]
+	return (xtrn, ytrn, xtst, ytst)
+end
+=#
+#=
+function main(arg="")
+
+  s = ArgParseSettings()
+  @add_arg_table s begin
+    ("--dataset"; arg_type = String; default = "shape"; help = "name of the dataset")
+    ("--model"; arg_type = String; default = "baseline"; help = "baseline or full model")
+  end
+  o = parse_args(s, as_symbols = true)
+  datasetName = o[:dataset]
+  modelType = o[:model]
+   if datasetName == "shape"
+     shapeTrain(modelType, )
+   elseif datasetName == "visualgenome"
+     visgenTrain(modelType, )
+   elseif datasetName == "visual7w"
+     vis7wTrain(modelType, )
+   elseif datasetName == "googleref"
+     googlerefTrain(modelType, )
+   else
+     error()
+   end
+
+ end
+ =#
 
 # Pycall to use GloVe
 
@@ -12,22 +48,24 @@ using Knet
 global momentum = 0.95;
 global lr = 0.005;
 
-# Shape extract
+#= Shape extract
 function shapeScore()
+  # use VGG-16 pretrained on ImageNet
 end
-
 # Visual Genome extract
 function visgenScore()
-end
+  # use Faster-RNN VGG-16 pretrained on MSCOCO
 
+end
 # Visual 7W extract
 function vis7wScore()
+  # use Faster-RNN VGG-16 pretrained on MSCOCO
 end
-
 # GoogleRef extract
 function googlerefScore()
+  # use Faster-RNN VGG-16 pretrained on MSCOCO
 end
-
+=#
 
 #####################################
 # Expression parsing with attention #
@@ -39,12 +77,13 @@ function parser(w)
   #embedding with GloVe
   e = glove(w)
   ht = lstm(e)
-  asubj = attention()
-  aobj = attention()
-  arel = attention()
+  asubj = attention(?,ht)
+  aobj = attention(?,ht)
+  arel = attention(?,ht)
   qsubj = languageRep(asubj,e)
   qobj = languageRep(aobj,e)
   qrel = languageRep(arel,e)
+  return (qsubj, qobj, qrel)
 end
 # Scan through the {et} with a 2-layer bidirectonal LSTM
 # LTSM = 1000-dim hidden state, ht = 4000-dim
@@ -95,19 +134,18 @@ end
 
 # Model takes Xvisual and Xspatial
 # Xvisual = conv
+
 # Xspatial = [Xmin/WI, Ymin/HI, Xmax/WI, Ymax/HI, Sb/SI],
 # where [xmin, ymin, xmax, ymax] and Sb are bounding box coordinates and area of b
 # and WI width, HI height and SI are of the image I.
-
 # Spatial Features
-
 function spatial(boundingBox, height, weight)
   box = KnetArray(boundingBox)
-  spatialFeatures = zeros(?,5)
-  x1 = box[:, 0] * 2.0 / weight - 1
-  y1 = box[:, 1] * 2.0 / height - 1
-  x2 = box[:, 2] * 2.0 / weight - 1
-  y2 = box[:, 3] * 2.0 / height - 1
+  spatialFeatures = zeros(size(box,1),5)
+  x1 = box[:, 0] * 2.0 / weight
+  y1 = box[:, 1] * 2.0 / height
+  x2 = box[:, 2] * 2.0 / weight
+  y2 = box[:, 3] * 2.0 / height
   S = (x2-x1) * (y2-y1)
 
   spatialFeatures[:, 0] = x1
@@ -182,14 +220,29 @@ function weakloss()
   return loss
 end
 
-# Shape dataset
+#= Shape dataset
 function shapeTrain()
-end
+  if modelType == "baseline"
 
+  elseif modelType == "full"
+
+  else
+    error()
+  end
+end
 # Visual Genom  dataset
 function visgenTrain()
-end
+  if modelType == "weakbaseline"
 
+  elseif modelType == "weakfull"
+
+  elseif modelType == "strongbaseline"
+
+  elseif modeType == "strongfull"
+  else
+    error()
+  end
+end
 # Visual 7W dataset
 function vis7wTrain()
 end
@@ -197,6 +250,7 @@ end
 # GoogleRef dataset
 function googlerefTrain()
 end
+=#
 
 function precision()
   trueCount = 0
@@ -206,3 +260,6 @@ function precision()
   result = trueCount / count
   return result
 end
+
+
+main()
