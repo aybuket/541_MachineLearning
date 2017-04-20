@@ -1,71 +1,42 @@
-for p in ("Knet","ArgParse","Pycall","GZip")
+for p in ("Knet","JSON","Images","FileIO")
     Pkg.installed(p) == nothing && Pkg.add(p)
 end
-@pyimport GloVe
-#=
+
+using FileIO
+
 function loaddata()
   info("Loading Visual Genome...")
-	xtrn = gzload("")[0:end]
-	xtst = gzload("")[0:end]
-	ytrn = gzload("")[0:end]
-	ytst = gzload("")[0:end]
-	return (xtrn, ytrn, xtst, ytst)
-end
-=#
-#=
-function main(arg="")
-
-  s = ArgParseSettings()
-  @add_arg_table s begin
-    ("--dataset"; arg_type = String; default = "shape"; help = "name of the dataset")
-    ("--model"; arg_type = String; default = "baseline"; help = "baseline or full model")
+  path = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/image_data.json"
+  f = open(path)
+  images = JSON.parse(f)
+  close(f)
+  data = []
+  for i in 1:5
+    path = images[i]["url"]
+    img = load(download(path))
+    img = convert(Array{Float32},reshape(ImageCore.raw(img),size(img,1),size(img,2),3))
+    push!(data,img)
   end
-  o = parse_args(s, as_symbols = true)
-  datasetName = o[:dataset]
-  modelType = o[:model]
-   if datasetName == "shape"
-     shapeTrain(modelType, )
-   elseif datasetName == "visualgenome"
-     visgenTrain(modelType, )
-   elseif datasetName == "visual7w"
-     vis7wTrain(modelType, )
-   elseif datasetName == "googleref"
-     googlerefTrain(modelType, )
-   else
-     error()
-   end
+	return data
+end
 
- end
- =#
-
-# Pycall to use GloVe
+function batch(x,y,bs)
+  data = Float32[]
+  for i=1:bs:size(X,2)
+		j = min(i+bs-1,size(X,2))
+		push!(data,(X[:,i:j],Y[:,i:j]))
+	end
+  data = convert(KnetArray{Float32},data)
+  return data
+end
 
 # Train 3000000 iteration
 # Momentum = 0.95
 # Initial LR = 0.005, multiplied with 0.1 after every 120000 iteration
 # Each batch = 1 image with all refexp annotated over and image
 # Parameters are initilized with Xavier initilizer
-global momentum = 0.95;
+global const momentum = 0.95;
 global lr = 0.005;
-
-#= Shape extract
-function shapeScore()
-  # use VGG-16 pretrained on ImageNet
-end
-# Visual Genome extract
-function visgenScore()
-  # use Faster-RNN VGG-16 pretrained on MSCOCO
-
-end
-# Visual 7W extract
-function vis7wScore()
-  # use Faster-RNN VGG-16 pretrained on MSCOCO
-end
-# GoogleRef extract
-function googlerefScore()
-  # use Faster-RNN VGG-16 pretrained on MSCOCO
-end
-=#
 
 #####################################
 # Expression parsing with attention #
@@ -75,7 +46,7 @@ end
 # Embed each word wt to a vector et using GloVe
 function parser(w)
   #embedding with GloVe
-  e = glove(w)
+  e = gl.glove(w)
   ht = lstm(e)
   asubj = attention(?,ht)
   aobj = attention(?,ht)
@@ -158,7 +129,7 @@ end
 
 # The parameters in QLoc = (Wv,s, bv,s, wloc, bloc)
 function locationModule(b,qloc,lw)
-  xs = 0 # spatial of b
+  xs = spatial(b,,) # spatial of b
   xv = 0 # visual of b with conv ?!?!?!!?!?!?!?!?!
   # Xv,s = [Xv, Xs] = representation of region b
   xvs = [xv, xs]
@@ -182,8 +153,8 @@ function relationModule(b1,b2,qrel,rw)
   # Xspatial = [Xmin/WI, Ymin/HI, Xmax/WI, Ymax/HI, Sb/SI],
   # where [xmin, ymin, xmax, ymax] and Sb are bounding box coordinates and area of b
   # and WI width, HI height and SI are of the image I.
-  x1 = spatial(b1,) # spatial features of b1
-  x2 = spatial(b2,) # spatial features of b2
+  x1 = spatial(b1,,) # spatial features of b1
+  x2 = spatial(b2,,) # spatial features of b2
   # x1,2 = [x1,x2]
   x = hcat(x1,x2)
   # ~x1,2 = W1,2*x1,2 + b1,2
@@ -220,37 +191,6 @@ function weakloss()
   return loss
 end
 
-#= Shape dataset
-function shapeTrain()
-  if modelType == "baseline"
-
-  elseif modelType == "full"
-
-  else
-    error()
-  end
-end
-# Visual Genom  dataset
-function visgenTrain()
-  if modelType == "weakbaseline"
-
-  elseif modelType == "weakfull"
-
-  elseif modelType == "strongbaseline"
-
-  elseif modeType == "strongfull"
-  else
-    error()
-  end
-end
-# Visual 7W dataset
-function vis7wTrain()
-end
-
-# GoogleRef dataset
-function googlerefTrain()
-end
-=#
 
 function precision()
   trueCount = 0
@@ -260,6 +200,3 @@ function precision()
   result = trueCount / count
   return result
 end
-
-
-main()
