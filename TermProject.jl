@@ -20,24 +20,14 @@ function loaddata()
 	return data
 end
 
-function batch(x,y,bs)
-  data = Float32[]
-  for i=1:bs:size(X,2)
-		j = min(i+bs-1,size(X,2))
-		push!(data,(X[:,i:j],Y[:,i:j]))
-	end
-  data = convert(KnetArray{Float32},data)
-  return data
-end
-
 # Train 3000000 iteration
 # Momentum = 0.95
 # Initial LR = 0.005, multiplied with 0.1 after every 120000 iteration
 # Each batch = 1 image with all refexp annotated over and image
 # Parameters are initilized with Xavier initilizer
-global const momentum = 0.95;
-global lr = 0.005;
-
+global const momentum = 0.95
+global lr = 0.005
+global embedding_matrix
 #####################################
 # Expression parsing with attention #
 #####################################
@@ -46,7 +36,6 @@ global lr = 0.005;
 # Embed each word wt to a vector et using GloVe
 function parser(w)
   #embedding with GloVe
-  e = gl.glove(w)
   ht = lstm(e)
   asubj = attention(?,ht)
   aobj = attention(?,ht)
