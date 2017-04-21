@@ -4,7 +4,7 @@ end
 
 using FileIO
 
-function loaddata()
+function loadimages()
   info("Loading Visual Genome...")
   path = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/image_data.json"
   f = open(path)
