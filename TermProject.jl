@@ -4,23 +4,73 @@ end
 
 using FileIO
 
-function loadimages()
+function loaddata()
   info("Loading Visual Genome...")
-  path = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/image_data.json"
-  f = open(path)
-  images = JSON.parse(f)
-  close(f)
+  impath = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/image_data.json"
+  objpath = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/objects.json"
+  relpath = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/relationships.json"
+  fim = open(impath)
+  fobj = open(objpath)
+  frel = open(relpath)
+  images = JSON.parse(fim)
+  objects = JSON.parse(fobj)
+  relations = JSON.parse(frel)
+  close(fim)
+  close(fobj)
+  close(frel)
   data = []
+  imgInfo = Dict{Any}
   for i in 1:size(images,1)
     path = images[i]["url"]
     img = load(download(path))
     width = images[i]["width"]
     height = images[i]["height"]
-    info = hcat(width,height)
     img = convert(Array{Float32},reshape(ImageCore.raw(img),width,height,3))
-    push!(data,(img,info))
+    imgInfo["image_id"] = images[i]["image_id"]
+    imgInfo["image"] = img
+    object_bbox = []
+    objID = Dict{Any}
+    for obj in objects[i]["objects"]
+      for j in 1:size(obj,1)
+        objID[obj[j]["object_id"]] = j
+      end
+      x = obj["x"]
+      y = obj["y"]
+      w = obj["w"]
+      h = obj["h"]
+      bbox = hcat(x,y,x+w,y+h)
+      push!(object_bbox,bbox)
+    end
+    imgInfo["objects"] = objects_bbox
+    relships = []
+    for rel in relations[i]["relationships"]
+      subj = rel["subject"]["name"]
+      obj = rel["object"]["name"]
+      pred = rel["predicate"]
+      subj_ids = objID[rel["subject"]["object_id"]]
+      obj_ids = objID[rel["object"]["object_id"]]
+      push!(relships,hcat(subj_ids, obj_ids, subj, pred, obj))
+    end
+    imgInfo["rels"] = relships
+    push!(data,imgInfo)
   end
-	return data
+  partFilePath = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/densecap_splits.json"
+  fpart = open(partFilePath)
+  sp = JSON.parse(fpart)
+  close(fpart)
+  dtrn = []
+  dtst = []
+  dval = []
+  for d in data
+    if d["image_id"] in sp["test"]
+      push!(dtst,d)
+    elseif d["image_id"] in sp["train"]
+      push!(dtrn,d)
+    elseif d["image_id"] in sp["val"]
+      push!(dval,d)
+    end
+  end
+	return (dtrn,dtst,dval)
 end
 
 # Train 3000000 iteration

@@ -2,7 +2,7 @@ using Knet
 include("TermProject.jl")
 # Visual Genome strong full
 function main()
-  data = loadimages()
+  dtrn, dtst, dval = loaddata()
 
 
 

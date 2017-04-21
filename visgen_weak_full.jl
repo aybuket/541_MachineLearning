@@ -2,7 +2,7 @@ using Knet
 include("TermProject.jl")
 # Visual Genome weak full model
 function main()
-  data = loadimages()
+  dtrn, dtst, dval = loaddata()
 end
 
 function train()
