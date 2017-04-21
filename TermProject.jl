@@ -11,7 +11,7 @@ function loaddata()
   images = JSON.parse(f)
   close(f)
   data = []
-  for i in 1:5
+  for i in 1:size(images,1)
     path = images[i]["url"]
     img = load(download(path))
     img = convert(Array{Float32},reshape(ImageCore.raw(img),size(img,1),size(img,2),3))
