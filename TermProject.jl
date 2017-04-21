@@ -14,8 +14,11 @@ function loaddata()
   for i in 1:size(images,1)
     path = images[i]["url"]
     img = load(download(path))
-    img = convert(Array{Float32},reshape(ImageCore.raw(img),size(img,1),size(img,2),3))
-    push!(data,img)
+    width = images[i]["width"]
+    height = images[i]["height"]
+    info = hcat(width,height)
+    img = convert(Array{Float32},reshape(ImageCore.raw(img),width,height,3))
+    push!(data,(img,info))
   end
 	return data
 end
