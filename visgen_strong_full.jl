@@ -4,11 +4,20 @@ include("TermProject.jl")
 function main()
   dtrn, dtst, dval = loaddata()
 
-
-
 end
 
-function train()
+lossgradient = grad(strongLoss)
+function train(data)
+  for epoch=1:300000
+    for d in data
+      g = lossgradient()
+      m = Momentum(lr=learning_rate, gamma=momentum)
+      update!(w,g,m)
+    end
+    if epoch % 160000 == 0
+      learning_rate = learning_rate*0.1
+    end
+  end
 end
 
 main()

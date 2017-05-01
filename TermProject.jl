@@ -1,14 +1,33 @@
-for p in ("Knet","JSON","Images","FileIO")
+for p in ("Knet","JSON","Images","FileIO","Pycall")
     Pkg.installed(p) == nothing && Pkg.add(p)
 end
-
 using FileIO
+using Pycall
+global const np = PyCall.pywrap(PyCall.pyimport("numpy"))
+global const glove = PyCall.pywrap(PyCall.pyimport("glove"))
+# Model Parameters for Visual Genome
+global numberOfVocab = 72704
+global embedded_dim = 300
+global lstm_dim = 1000
+global learning_rate = 0.005
+# learning rate will descent with 0.1 rate in every 120000. step
+global momentum = 0.95
+# FasterRCNN parameters
+params = np.load('fasterrcnn_vgg_coco_params.npz')
+processed_W = params['processed_W']
+processed_B = params['processed_B']
 
+# Parameters are initilized with Xavier initilizer
+function initilize()
+  #use xavier()
+end
+
+# loading Visual Genome dataset
 function loaddata()
   info("Loading Visual Genome...")
-  impath = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/image_data.json"
-  objpath = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/objects.json"
-  relpath = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/relationships.json"
+  impath = "image_data.json"
+  objpath = "objects.json"
+  relpath = "relationships.json"
   fim = open(impath)
   fobj = open(objpath)
   frel = open(relpath)
@@ -54,7 +73,7 @@ function loaddata()
     imgInfo["rels"] = relships
     push!(data,imgInfo)
   end
-  partFilePath = "/Users/Aybuke/Desktop/KocUniversity/2017Spring/Comp541/Project/VisualGenome/densecap_splits.json"
+  partFilePath = "densecap_splits.json"
   fpart = open(partFilePath)
   sp = JSON.parse(fpart)
   close(fpart)
@@ -73,14 +92,17 @@ function loaddata()
 	return (dtrn,dtst,dval)
 end
 
-# Train 3000000 iteration
-# Momentum = 0.95
-# Initial LR = 0.005, multiplied with 0.1 after every 120000 iteration
-# Each batch = 1 image with all refexp annotated over and image
-# Parameters are initilized with Xavier initilizer
-global const momentum = 0.95
-global lr = 0.005
-global embedding_matrix
+# loaddata checking trial
+function main()
+  dtrn, dtst, dval = loaddata()
+  print(size(dtrn))
+  print(size(dtst))
+  print(size(dval))
+end
+main()
+
+
+
 #####################################
 # Expression parsing with attention #
 #####################################
@@ -89,6 +111,7 @@ global embedding_matrix
 # Embed each word wt to a vector et using GloVe
 function parser(w)
   #embedding with GloVe
+  e = glove.
   ht = lstm(e)
   asubj = attention(?,ht)
   aobj = attention(?,ht)
@@ -104,6 +127,20 @@ end
 # and backward hidden state ht(1,bw) at each time step. Becomes ht(1)
 # Second layer of LSTM = input: {ht(1)}, output: ht(2,fw) & ht(2,bw)
 # Then ht = [ht(1,fw), ht(1,bw), ht(2,fw), ht(2,bw)]
+
+function lstm(param, state, input)
+    weight,bias = param
+    hidden,cell = state
+    h       = size(hidden,2)
+    gates   = hcat(input,hidden) * weight .+ bias
+    forget  = sigm(gates[:,1:h])
+    ingate  = sigm(gates[:,1+h:2h])
+    outgate = sigm(gates[:,1+2h:3h])
+    change  = tanh(gates[:,1+3h:4h])
+    cell    = cell .* forget + ingate .* change
+    hidden  = outgate .* tanh(cell)
+    return (hidden,cell)
+end
 
 function lstmLayer1(e)
   return (ht1fw,ht1bw)
@@ -226,7 +263,7 @@ function strongLoss()
 end
 
 # LossWeak = -log(exp(ssubj(bsubj-gt))) / ∑ exp(Ssubj(bi)))
-function weakloss()
+function weakLoss(b,qloc,lw)
   subj = locationModule(b,qloc,lw)
   expsubj = exp(subj)
   loss = -log(expsubj/sum(expsubj))
