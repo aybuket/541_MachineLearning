@@ -13,9 +13,9 @@ global learning_rate = 0.005
 # learning rate will descent with 0.1 rate in every 120000. step
 global momentum = 0.95
 # FasterRCNN parameters
-params = np.load('fasterrcnn_vgg_coco_params.npz')
-processed_W = params['processed_W']
-processed_B = params['processed_B']
+# params = np.load('fasterrcnn_vgg_coco_params.npz')
+# processed_W = params['processed_W']
+# processed_B = params['processed_B']
 
 # Parameters are initilized with Xavier initilizer
 function initilize()
